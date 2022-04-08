@@ -1,0 +1,11 @@
+* 0.1.1
+    - Fixed setup.py
+    - Added CHANGES
+
+* 0.1.0
+    Initial release with the following features:
+
+    - connector for Cassandra
+    - connector for Redis Strings (single and batch)
+    - connector for OPC-UA server
+    - connector for Smart Forge Simulator (default_parameters only)
