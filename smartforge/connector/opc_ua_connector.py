@@ -1,9 +1,12 @@
+from __future__ import annotations
 import logging
 import threading
-from typing import Union
+from typing import Union, Dict
+from abc import ABC, abstractmethod
 
-from asyncua import Client
-from asyncua import ua
+from asyncua import Client, Node, ua
+from asyncua.common.subscription import Subscription
+
 
 """
 Logger
@@ -34,6 +37,7 @@ class OPCUAConnector:
         self._client = Client(f"opc.tcp://{self._host}", timeout)
         self._client.set_user(self._username)
         self._client.set_password(self._password)
+        self._subscriptions: Dict[str, Subscription] = {}
         self._connected = False
         self._lock = threading.Lock()
 
@@ -97,3 +101,21 @@ class OPCUAConnector:
         self._lock.release()
 
         return attr.Value.Value
+
+    async def start_subscription(self, node_id: str, subscription_handler: OPCUASubscriptionHandler) -> None:
+        subscription: Subscription = await self._client.create_subscription(500, subscription_handler)
+        self._subscriptions[node_id] = subscription
+        node = self._client.get_node(node_id)
+        await subscription.subscribe_data_change(node)
+
+    async def stop_subscription(self, node_id: str):
+        subscription = self._subscriptions.get(node_id)
+        if subscription is not None:
+            await subscription.delete()
+            self._subscriptions.pop(node_id)
+
+
+class OPCUASubscriptionHandler(ABC):
+    @abstractmethod
+    def datachange_notification(self, node: Node, val, data) -> None:
+        pass

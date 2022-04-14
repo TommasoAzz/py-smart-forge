@@ -1,4 +1,4 @@
 from .cassandra_connector import CassandraConnector
-from .opc_ua_connector import OPCUAConnector
+from .opc_ua_connector import OPCUAConnector, OPCUASubscriptionHandler
 from .redis_connector import RedisConnector
 from .simulator_connector import SimulatorConnector

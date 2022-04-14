@@ -1,3 +1,6 @@
+* 0.2.0
+    - Added subscription to tags feature to OPCUAConnector
+
 * 0.1.2
     - Fixed RedisConnector
     - Added docs to RedisConnector
