@@ -42,17 +42,31 @@ class OPCUAConnector:
         self._lock = threading.Lock()
 
     async def connect(self) -> None:
-        self._lock.acquire()
-        await self._client.set_security_string(self._security)
-        await self._client.connect()
-        self._connected = True
-        self._lock.release()
+        try:
+            self._lock.acquire()
+            await self._client.set_security_string(self._security)
+            await self._client.connect()
+            self._connected = True
+        except Exception as exc:
+            logger.error(exc)
+        finally:
+            self._lock.release()
 
     async def disconnect(self) -> None:
-        self._lock.acquire()
-        await self._client.disconnect()
-        self._connected = False
-        self._lock.release()
+        try:
+            self._lock.acquire()
+
+            if len(self._subscriptions) > 0:
+                logger.warning(f"Removing subscriptions for tags: {self._subscriptions.keys()}")
+                for subscription in self._subscriptions.values():
+                    await subscription.delete()
+
+            await self._client.disconnect()
+            self._connected = False
+        except Exception as exc:
+            logger.error(exc)
+        finally:
+            self._lock.release()
 
     @property
     def is_connected(self) -> bool:
@@ -89,6 +103,11 @@ class OPCUAConnector:
             return
 
         self._lock.acquire()
+        if not self._connected:
+            logger.error("Not connected to OPC-UA.")
+            self._lock.release()
+            return
+
         node = self._client.get_node(node_id)
         to_write = ua.Variant(value, variant_type)
         await node.write_attribute(ua.AttributeIds.Value, ua.DataValue(to_write))
@@ -96,6 +115,11 @@ class OPCUAConnector:
 
     async def get(self, node_id: str) -> Union[bool, float, int]:
         self._lock.acquire()
+        if not self._connected:
+            logger.error("Not connected to OPC-UA.")
+            self._lock.release()
+            return None
+
         node = self._client.get_node(node_id)
         attr = await node.read_attribute(ua.AttributeIds.Value)
         self._lock.release()
@@ -103,16 +127,31 @@ class OPCUAConnector:
         return attr.Value.Value
 
     async def start_subscription(self, node_id: str, subscription_handler: OPCUASubscriptionHandler) -> None:
+        self._lock.acquire()
+        if not self._connected:
+            logger.error("Not connected to OPC-UA.")
+            self._lock.release()
+            return None
+
         subscription: Subscription = await self._client.create_subscription(500, subscription_handler)
         self._subscriptions[node_id] = subscription
         node = self._client.get_node(node_id)
         await subscription.subscribe_data_change(node)
+        self._lock.release()
 
     async def stop_subscription(self, node_id: str):
+        self._lock.acquire()
+        if not self._connected:
+            logger.error("Not connected to OPC-UA.")
+            self._lock.release()
+            return None
+
         subscription = self._subscriptions.get(node_id)
         if subscription is not None:
             await subscription.delete()
             self._subscriptions.pop(node_id)
+
+        self._lock.release()
 
 
 class OPCUASubscriptionHandler(ABC):

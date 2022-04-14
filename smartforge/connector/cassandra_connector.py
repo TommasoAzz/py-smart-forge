@@ -32,6 +32,7 @@ class CassandraConnector:
             port=port,
             protocol_version=ProtocolVersion.V5,
             auth_provider=auth_provider)
+        self._session = None
         self._connected = False
         self._lock = threading.Lock()
 

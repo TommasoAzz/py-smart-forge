@@ -34,6 +34,7 @@ class RedisConnector:
         self._host = host
         self._port = port
         self._password = password
+        self._conn = None
         self._connected = False
         self._lock = threading.Lock()
 
