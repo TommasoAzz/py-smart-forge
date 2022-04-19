@@ -33,11 +33,13 @@ class CassandraConnector:
             protocol_version=ProtocolVersion.V5,
             auth_provider=auth_provider)
         self._session = None
+        self._keyspace = None
         self._connected = False
         self._lock = threading.Lock()
 
     def connect(self, keyspace: str):
         self._lock.acquire()
+        self._keyspace = keyspace
         self._session: Session = self._cluster.connect(keyspace)
         self._connected = True
         self._lock.release()
@@ -72,4 +74,14 @@ class CassandraConnector:
         # elif "%" not in statement and len(args) > 0:  # not interesting
         else:
             self._session.execute(statement)
+        self._lock.release()
+
+    def register_type(self, cassandra_type: str, user_type) -> None:
+        self._lock.acquire()
+        if not self._connected:
+            self._lock.release()
+            return
+
+        self._cluster.register_user_type(self._keyspace, cassandra_type, user_type)
+
         self._lock.release()
