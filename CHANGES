@@ -4,6 +4,7 @@
 
 * 0.2.0
     - Added subscription to tags feature to OPCUAConnector
+    - Fixed OPCUAConnector, now checking connection before set, get, start_subscription, stop_subscription
 
 * 0.1.2
     - Fixed RedisConnector
