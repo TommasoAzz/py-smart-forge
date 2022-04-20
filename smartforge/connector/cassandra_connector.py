@@ -19,19 +19,7 @@ class CassandraConnector:
         self._port = port
         self._username = username
         self._password = password
-        if username == "" and password == "":
-            logger.warn("No username or password are set. If this is what you expect, ignore the message.")
-            auth_provider = None
-        else:
-            auth_provider = PlainTextAuthProvider(
-                username=username,
-                password=password
-            )
-        self._cluster = Cluster(
-            [host],
-            port=port,
-            protocol_version=ProtocolVersion.V5,
-            auth_provider=auth_provider)
+        self._cluster = None
         self._session = None
         self._keyspace = None
         self._connected = False
@@ -40,6 +28,19 @@ class CassandraConnector:
     def connect(self, keyspace: str):
         self._lock.acquire()
         self._keyspace = keyspace
+        if self._username == "" and self._password == "":
+            logger.warn("No username or password are set. If this is what you expect, ignore the message.")
+            auth_provider = None
+        else:
+            auth_provider = PlainTextAuthProvider(
+                username=self._username,
+                password=self._password
+            )
+        self._cluster = Cluster(
+            [self._host],
+            port=self._port,
+            protocol_version=ProtocolVersion.V5,
+            auth_provider=auth_provider)
         self._session: Session = self._cluster.connect(keyspace)
         self._connected = True
         self._lock.release()

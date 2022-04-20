@@ -1,3 +1,6 @@
+* 0.3.1
+    - Fixed connection to cluster in CassandraConnector
+
 * 0.3.0
     - Added possibility to register types to CassandraConnector
     - Updated Redis dependency
