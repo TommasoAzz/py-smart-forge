@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1.1'
+VERSION = '0.3.2'
 DESCRIPTION = 'Connectors, model classes, utilities to be used within SmartForge-related Python projects.'
 LONG_DESCRIPTION = 'Connectors, model classes, utilities to be used within SmartForge-related Python projects.'
 
@@ -14,7 +14,7 @@ setup(
     packages=find_packages(),
     install_requires=["asyncua == 0.9.92",
                       "cassandra-driver == 3.25.0",
-                      "redis == 4.1.4",
+                      "redis == 4.2.2",
                       "requests == 2.27.1"],
     keywords=['smartforge', 'karlstad', 'university',
               'kau', 'bharat', 'forge', 'bf'],
