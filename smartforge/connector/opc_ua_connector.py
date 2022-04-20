@@ -126,14 +126,17 @@ class OPCUAConnector:
 
         return attr.Value.Value
 
-    async def start_subscription(self, node_id: str, subscription_handler: OPCUASubscriptionHandler) -> None:
+    async def start_subscription(self,
+                                 node_id: str,
+                                 subscription_handler: OPCUASubscriptionHandler,
+                                 update_interval: int = 500) -> None:
         self._lock.acquire()
         if not self._connected:
             logger.error("Not connected to OPC-UA.")
             self._lock.release()
             return None
 
-        subscription: Subscription = await self._client.create_subscription(500, subscription_handler)
+        subscription: Subscription = await self._client.create_subscription(update_interval, subscription_handler)
         self._subscriptions[node_id] = subscription
         node = self._client.get_node(node_id)
         await subscription.subscribe_data_change(node)
