@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.3.3'
+VERSION = '0.3.4'
 DESCRIPTION = 'Connectors, model classes, utilities to be used within SmartForge-related Python projects.'
 LONG_DESCRIPTION = 'Connectors, model classes, utilities to be used within SmartForge-related Python projects.'
 

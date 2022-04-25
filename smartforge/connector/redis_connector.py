@@ -4,9 +4,11 @@ from enum import Enum, unique
 from typing import List, Union, Dict
 
 from redis import Redis
+from redis.commands.json.path import Path
 
 _ValueType = Union[bytes, float, int, bool, str, None]
 _ValueTypeNotNone = Union[bytes, float, int, bool, str]
+_JsonValueType = Union[bytes, float, int, bool, str, dict, None]
 
 """
 Logger
@@ -69,10 +71,26 @@ class RedisConnector:
 
         return conn
 
+    def json_set(self, key: str, val: dict) -> None:
+        """
+        Sets one key-value pair in which the key is ```key``` (a string) and
+        the value is ```val``` which is a dict.
+        """
+        self._lock.acquire()
+        if not self._connected:
+            logger.error("Not connected to Redis.")
+            self._lock.release()
+            return
+
+        self._conn.json().set(key, Path.rootPath(), val)
+
+        self._lock.release()
+
     def set(self, key: str, val: _ValueTypeNotNone) -> None:
         """
         Sets one key-value pair in which the key is ```key``` (a string) and
         the value is ```val``` which can be a number, a boolean, a string or bytes.
+
         Boolean values get converted to strings.
         """
         self._lock.acquire()
@@ -91,6 +109,7 @@ class RedisConnector:
         """
         Sets many key-value pairs in which the keys are ```pairs.keys()``` (strings) and
         the values are ```pairs.values()``` which can be a numbers, booleans, strings or bytes.
+
         Boolean values get converted to strings (side-effect).
         """
         self._lock.acquire()
@@ -130,10 +149,42 @@ class RedisConnector:
 
         return ret
 
+    def json_get(self, key: str, path: str=".") -> _JsonValueType:
+        """
+        Retrieves the value associated to ```key``` in the active Redis instance.
+
+        ```None``` is returned if the connection to Redis is not established.
+
+        If a field inside the value of the pair with key ```key``` is required,
+        specify it inside path.
+
+        For example:
+        `test: {
+            "test2": {
+                "test3": 13
+            },
+            "test4": 14.5
+        }`
+
+        To retrieve the whole dictionary use `key=test` and `path="."`, to retrieve the value `13` 
+        (of pair with key `test3`) use `key=test` and `path=".test2.test3"`.
+        """
+        self._lock.acquire()
+        if not self._connected:
+            logger.error("Not connected to Redis.")
+            self._lock.release()
+            return None
+
+        ret = self._conn.json().get(key, Path(path))
+        self._lock.release()
+
+        return ret
+
     def get(self, key: str, data_type: RedisType) -> _ValueType:
         """
         Retrieves the value associated to ```key``` in the active Redis instance,
         converting to type ```data_type``` before returning it.
+
         ```None``` is returned if the connection to Redis is not established.
         """
         self._lock.acquire()
@@ -151,6 +202,7 @@ class RedisConnector:
         """
         Retrieves the values associated to ```keys``` in the active Redis instance,
         converting to types ```data_types``` before returning them.
+
         ```list()``` (or ```[]```, i.e., an empty list) is returned if the connection 
         to Redis is not established.
         """
