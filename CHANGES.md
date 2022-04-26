@@ -1,3 +1,7 @@
+**Version 0.3.6**
+
+- Fixed support for inner paths in json_set and json_get in RedisConnector
+
 **Version 0.3.5**
 
 - Added support for more types in RedisConnector json_set

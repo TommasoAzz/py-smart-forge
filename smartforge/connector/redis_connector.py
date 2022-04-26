@@ -4,7 +4,6 @@ from enum import Enum, unique
 from typing import List, Union, Dict
 
 from redis import Redis
-from redis.commands.json.path import Path
 
 _ValueTypeNotNone = Union[bytes, float, int, bool, str]
 _ValueType = Union[_ValueTypeNotNone, None]
@@ -72,10 +71,24 @@ class RedisConnector:
 
         return conn
 
-    def json_set(self, key: str, val: _JsonValueType) -> None:
+    def json_set(self, key: str, val: _JsonValueType, path: str=".") -> None:
         """
         Sets one key-value pair in which the key is ```key``` (a string) and
         the value is ```val``` which is a dict or any other type (in case of a single value).
+        
+        If a field inside the value of the pair with key ```key``` is to be set,
+        specify it inside ```path```.
+
+        For example:
+        `test: {
+            "test2": {
+                "test3": 13
+            },
+            "test4": 14.5
+        }`
+
+        To (re)set the whole dictionary use `key=test` and `path="."`, to (re)set the value `13` 
+        (of pair with key `test3`) use `key=test` and `path=".test2.test3"`.
         """
         self._lock.acquire()
         if not self._connected:
@@ -83,7 +96,7 @@ class RedisConnector:
             self._lock.release()
             return
 
-        self._conn.json().set(key, Path.rootPath(), val)
+        self._conn.json().set(key, path, val)
 
         self._lock.release()
 
@@ -157,7 +170,7 @@ class RedisConnector:
         ```None``` is returned if the connection to Redis is not established.
 
         If a field inside the value of the pair with key ```key``` is required,
-        specify it inside path.
+        specify it inside ```path```.
 
         For example:
         `test: {
@@ -176,7 +189,7 @@ class RedisConnector:
             self._lock.release()
             return None
 
-        ret = self._conn.json().get(key, Path(path))
+        ret = self._conn.json().get(key, path)
         self._lock.release()
 
         return ret
