@@ -6,9 +6,10 @@ from typing import List, Union, Dict
 from redis import Redis
 from redis.commands.json.path import Path
 
-_ValueType = Union[bytes, float, int, bool, str, None]
 _ValueTypeNotNone = Union[bytes, float, int, bool, str]
-_JsonValueType = Union[bytes, float, int, bool, str, dict, None]
+_ValueType = Union[_ValueTypeNotNone, None]
+_JsonValueTypeNotNone = Union[float, int, bool, str, dict]
+_JsonValueType = Union[_JsonValueTypeNotNone, None]
 
 """
 Logger
@@ -71,10 +72,10 @@ class RedisConnector:
 
         return conn
 
-    def json_set(self, key: str, val: dict) -> None:
+    def json_set(self, key: str, val: _JsonValueType) -> None:
         """
         Sets one key-value pair in which the key is ```key``` (a string) and
-        the value is ```val``` which is a dict.
+        the value is ```val``` which is a dict or any other type (in case of a single value).
         """
         self._lock.acquire()
         if not self._connected:

@@ -48,7 +48,8 @@ class OPCUAConnector:
             await self._client.connect()
             self._connected = True
         except Exception as exc:
-            logger.error(exc)
+            logger.error(f"{type(exc)} while connecting.")
+            raise
         finally:
             self._lock.release()
 
@@ -64,7 +65,8 @@ class OPCUAConnector:
             await self._client.disconnect()
             self._connected = False
         except Exception as exc:
-            logger.error(exc)
+            logger.error(f"{type(exc)} while disconnecting.")
+            raise
         finally:
             self._lock.release()
 

@@ -1,3 +1,9 @@
+**Version 0.3.5**
+
+- Added support for more types in RedisConnector json_set
+- Removed support for bytes in RedisConnector json_get (it is actually not supported)
+- Improved error messages while (dis)connecting to an OPC-UA server in OPCUAConnector and added rethrowing of exceptions
+
 **Version 0.3.4**
 
 - Added support for RedisJSON module for Redis
