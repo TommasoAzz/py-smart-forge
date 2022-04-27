@@ -237,3 +237,20 @@ class RedisConnector:
 
         self._lock.release()
         return ret
+
+    def keys(self, pattern: str="*") -> List[str]:
+        """
+        Retrieves all keys inside the Redis instance, given a ```pattern```.
+
+        Returns an empty list both if there are no keys and if it is not connected.
+        """
+        self._lock.acquire()
+        if not self._connected:
+            logger.error("Not connected to Redis.")
+            self._lock.release()
+            return list()
+
+        ret = [key.decode("utf-8") for key in self._conn.keys(pattern)]
+
+        self._lock.release()
+        return ret

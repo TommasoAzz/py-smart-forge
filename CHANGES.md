@@ -1,3 +1,7 @@
+**Version 0.4.0**
+
+- Added support for retrieving keys in the Redis instance given a pattern.
+
 **Version 0.3.6**
 
 - Fixed support for inner paths in json_set and json_get in RedisConnector
