@@ -1,3 +1,7 @@
+**Version 0.5.0**
+
+- Added ConfigManager for retrieving configuration from the configuration storage.
+
 **Version 0.4.0**
 
 - Added support for retrieving keys in the Redis instance given a pattern.
