@@ -27,6 +27,11 @@ class CassandraConnector:
 
     def connect(self, keyspace: str):
         self._lock.acquire()
+        if self._connected:
+            logger.warning("Already connected to Cassandra")
+            self._lock.release()
+            return
+        
         self._keyspace = keyspace
         if self._username == "" and self._password == "":
             logger.warn("No username or password are set. If this is what you expect, ignore the message.")
@@ -47,6 +52,11 @@ class CassandraConnector:
 
     def disconnect(self):
         self._lock.acquire()
+        if not self._connected:
+            logger.warning("Not connected to Cassandra")
+            self._lock.release()
+            return
+        
         self._cluster.shutdown()
         self._connected = False
         self._lock.release()
@@ -62,6 +72,7 @@ class CassandraConnector:
     def insert(self, statement: str, args: dict = {}):
         self._lock.acquire()
         if not self._connected:
+            logger.error("Not connected to Cassandra")
             self._lock.release()
             return
         
@@ -80,6 +91,7 @@ class CassandraConnector:
     def register_type(self, cassandra_type: str, user_type) -> None:
         self._lock.acquire()
         if not self._connected:
+            logger.error("Not connected to Cassandra")
             self._lock.release()
             return
 

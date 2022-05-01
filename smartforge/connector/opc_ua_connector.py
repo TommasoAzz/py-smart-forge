@@ -44,6 +44,11 @@ class OPCUAConnector:
     async def connect(self) -> None:
         try:
             self._lock.acquire()
+            if self._connected:
+                logger.warning("Already connected to OPC-UA.")
+                self._lock.release()
+                return
+            
             await self._client.set_security_string(self._security)
             await self._client.connect()
             self._connected = True
@@ -56,6 +61,10 @@ class OPCUAConnector:
     async def disconnect(self) -> None:
         try:
             self._lock.acquire()
+            if not self._connected:
+                logger.warning("Not connected to OPC-UA.")
+                self._lock.release()
+                return
 
             if len(self._subscriptions) > 0:
                 logger.warning(f"Removing subscriptions for tags: {self._subscriptions.keys()}")

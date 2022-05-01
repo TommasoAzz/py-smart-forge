@@ -46,6 +46,11 @@ class RedisConnector:
         The connection is open to database number ```db```.
         """
         self._lock.acquire()
+        if self._connected:
+            logger.warning("Already connected to Redis.")
+            self._lock.release()
+            return
+        
         self._conn = Redis(self._host, self._port, db, self._password)
         self._connected = True
         self._lock.release()
@@ -55,6 +60,11 @@ class RedisConnector:
         Closes the connection to the Redis instance.
         """
         self._lock.acquire()
+        if not self._connected:
+            logger.warning("Not connected to Redis.")
+            self._lock.release()
+            return
+        
         del self._conn
         self._connected = False
         self._lock.release()

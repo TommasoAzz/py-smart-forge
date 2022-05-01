@@ -1,3 +1,7 @@
+**Version 0.5.1**
+
+- Added extra checks in connector for avoiding reconnection and disconnecting when not connected to the servers.
+
 **Version 0.5.0**
 
 - Added ConfigManager for retrieving configuration from the configuration storage.
