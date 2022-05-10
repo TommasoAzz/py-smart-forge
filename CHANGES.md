@@ -1,3 +1,7 @@
+**Version 0.6.0**
+
+- Added logger wrapper in utils that supports both console and file logging.
+
 **Version 0.5.1**
 
 - Added extra checks in connector for avoiding reconnection and disconnecting when not connected to the servers.
