@@ -1,7 +1,7 @@
-import logging
 import threading
 from enum import Enum, unique
 from typing import List, Union, Dict
+from smartforge.utils import get_logger
 
 from redis import Redis
 
@@ -13,8 +13,7 @@ _JsonValueType = Union[_JsonValueTypeNotNone, None]
 """
 Logger
 """
-logger = logging.getLogger("RedisConnector")
-logger.setLevel(level=logging.INFO)
+logger = get_logger("RedisConnector")
 
 
 @unique
@@ -31,7 +30,7 @@ class RedisConnector:
     Connector for Redis server instances.
     Support for SET, GET, MSET, MGET operations.
     """
-    def __init__(self, host: str, port: int, password: str = "") -> None:
+    def __init__(self, host: str, port: int, password: str = "", lock_protection: bool = False) -> None:
         logger.info(f"Creating a new RedisConnector connecting to {host}:{port}.")
         self._host = host
         self._port = port
@@ -39,35 +38,41 @@ class RedisConnector:
         self._conn = None
         self._connected = False
         self._lock = threading.Lock()
+        if lock_protection:
+            self._acquire = lambda: self._lock.acquire()
+            self._release = self._lock.release
+        else:
+            self._acquire = lambda: True
+            self._release = lambda: None
 
     def connect(self, db: int = 0):
         """
         Opens a connection to the Redis instance (parameters specified when building the object).
         The connection is open to database number ```db```.
         """
-        self._lock.acquire()
+        self._acquire()
         if self._connected:
             logger.warning("Already connected to Redis.")
-            self._lock.release()
+            self._release()
             return
         
         self._conn = Redis(self._host, self._port, db, self._password)
         self._connected = True
-        self._lock.release()
+        self._release()
 
     def disconnect(self):
         """
         Closes the connection to the Redis instance.
         """
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.warning("Not connected to Redis.")
-            self._lock.release()
+            self._release()
             return
         
         del self._conn
         self._connected = False
-        self._lock.release()
+        self._release()
 
     @property
     def is_connected(self) -> bool:
@@ -75,9 +80,9 @@ class RedisConnector:
         Returns ```true``` if the object is connected to the Redis instance,
         ```false``` otherwise.
         """
-        self._lock.acquire()
+        self._acquire()
         conn = self._connected
-        self._lock.release()
+        self._release()
 
         return conn
 
@@ -100,15 +105,15 @@ class RedisConnector:
         To (re)set the whole dictionary use `key=test` and `path="."`, to (re)set the value `13` 
         (of pair with key `test3`) use `key=test` and `path=".test2.test3"`.
         """
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to Redis.")
-            self._lock.release()
+            self._release()
             return
 
         self._conn.json().set(key, path, val)
 
-        self._lock.release()
+        self._release()
 
     def set(self, key: str, val: _ValueTypeNotNone) -> None:
         """
@@ -117,17 +122,17 @@ class RedisConnector:
 
         Boolean values get converted to strings.
         """
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to Redis.")
-            self._lock.release()
+            self._release()
             return
         
         if val is True or val is False:  # <=> type(val) == bool
             self._conn.set(key, str(val))
         else:
             self._conn.set(key, val)
-        self._lock.release()
+        self._release()
 
     def multiple_set(self, pairs: Dict[str, _ValueTypeNotNone]) -> None:
         """
@@ -136,10 +141,10 @@ class RedisConnector:
 
         Boolean values get converted to strings (side-effect).
         """
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to Redis.")
-            self._lock.release()
+            self._release()
             return
 
         # Creating a dictionary of the key value pairs
@@ -148,7 +153,7 @@ class RedisConnector:
                 pairs[key] = str(val)
         
         self._conn.mset(pairs)
-        self._lock.release()
+        self._release()
 
     @staticmethod
     def __convert_values(values: List[Union[bytes, None]], data_types: List[RedisType]) -> List[_ValueType]:
@@ -193,14 +198,14 @@ class RedisConnector:
         To retrieve the whole dictionary use `key=test` and `path="."`, to retrieve the value `13` 
         (of pair with key `test3`) use `key=test` and `path=".test2.test3"`.
         """
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to Redis.")
-            self._lock.release()
+            self._release()
             return None
 
         ret = self._conn.json().get(key, path)
-        self._lock.release()
+        self._release()
 
         return ret
 
@@ -211,14 +216,14 @@ class RedisConnector:
 
         ```None``` is returned if the connection to Redis is not established.
         """
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to Redis.")
-            self._lock.release()
+            self._release()
             return None
 
         ret = RedisConnector.__convert_values([self._conn.get(key)], [data_type])
-        self._lock.release()
+        self._release()
 
         return ret[0]
 
@@ -230,37 +235,37 @@ class RedisConnector:
         ```list()``` (or ```[]```, i.e., an empty list) is returned if the connection 
         to Redis is not established.
         """
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to Redis.")
-            self._lock.release()
+            self._release()
             return list()
 
         if len(keys) != len(data_types):
             logger.error("Arguments keys and data_types do not have the same number of items.")
-            self._lock.release()
+            self._release()
             return list()
 
         values = self._conn.mget(keys) if len(keys) > 1 else [self._conn.get(keys[0])]
 
         ret = RedisConnector.__convert_values(values, data_types)
 
-        self._lock.release()
+        self._release()
         return ret
 
-    def keys(self, pattern: str="*") -> List[str]:
+    def keys(self, pattern: str = "*") -> List[str]:
         """
         Retrieves all keys inside the Redis instance, given a ```pattern```.
 
         Returns an empty list both if there are no keys and if it is not connected.
         """
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to Redis.")
-            self._lock.release()
+            self._release()
             return list()
 
         ret = [key.decode("utf-8") for key in self._conn.keys(pattern)]
 
-        self._lock.release()
+        self._release()
         return ret

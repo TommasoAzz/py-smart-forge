@@ -1,4 +1,8 @@
-**Version 0.6.0**
+**Version 0.7.0**
+
+- Fixes and new flag for controlling whether to enable/disable lock protection (default: disabled).
+
+- **Version 0.6.0**
 
 - Added logger wrapper in utils that supports both console and file logging.
 

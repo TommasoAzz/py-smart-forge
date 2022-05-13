@@ -1,18 +1,16 @@
 from __future__ import annotations
-import logging
 import threading
 from typing import Union, Dict
 from abc import ABC, abstractmethod
 
 from asyncua import Client, Node, ua
 from asyncua.common.subscription import Subscription
-
+from smartforge.utils import get_logger
 
 """
 Logger
 """
-logger = logging.getLogger("OPCUAConnector")
-logger.setLevel(level=logging.INFO)
+logger = get_logger("OPCUAConnector")
 
 
 class OPCUAConnector:
@@ -25,7 +23,8 @@ class OPCUAConnector:
                  username: str = "",
                  password: str = "",
                  security: str = "",
-                 timeout: float = 1.0) -> None:
+                 timeout: float = 1.0,
+                 lock_protection: bool = False) -> None:
         """
         The host requires both the hostname and port to be specified.
         """
@@ -40,13 +39,20 @@ class OPCUAConnector:
         self._subscriptions: Dict[str, Subscription] = {}
         self._connected = False
         self._lock = threading.Lock()
+        self._lock = threading.Lock()
+        if lock_protection:
+            self._acquire = lambda: self._lock.acquire()
+            self._release = self._lock.release
+        else:
+            self._acquire = lambda: True
+            self._release = lambda: None
 
     async def connect(self) -> None:
         try:
-            self._lock.acquire()
+            self._acquire()
             if self._connected:
                 logger.warning("Already connected to OPC-UA.")
-                self._lock.release()
+                self._release()
                 return
             
             await self._client.set_security_string(self._security)
@@ -56,14 +62,14 @@ class OPCUAConnector:
             logger.error(f"{type(exc)} while connecting.")
             raise
         finally:
-            self._lock.release()
+            self._release()
 
     async def disconnect(self) -> None:
         try:
-            self._lock.acquire()
+            self._acquire()
             if not self._connected:
                 logger.warning("Not connected to OPC-UA.")
-                self._lock.release()
+                self._release()
                 return
 
             if len(self._subscriptions) > 0:
@@ -77,13 +83,13 @@ class OPCUAConnector:
             logger.error(f"{type(exc)} while disconnecting.")
             raise
         finally:
-            self._lock.release()
+            self._release()
 
     @property
     def is_connected(self) -> bool:
-        self._lock.acquire()
+        self._acquire()
         conn = self._connected
-        self._lock.release()
+        self._release()
 
         return conn
 
@@ -113,27 +119,27 @@ class OPCUAConnector:
                          "it can only have types: bool, float, int")
             return
 
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to OPC-UA.")
-            self._lock.release()
+            self._release()
             return
 
         node = self._client.get_node(node_id)
         to_write = ua.Variant(value, variant_type)
         await node.write_attribute(ua.AttributeIds.Value, ua.DataValue(to_write))
-        self._lock.release()
+        self._release()
 
     async def get(self, node_id: str) -> Union[bool, float, int]:
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to OPC-UA.")
-            self._lock.release()
+            self._release()
             return None
 
         node = self._client.get_node(node_id)
         attr = await node.read_attribute(ua.AttributeIds.Value)
-        self._lock.release()
+        self._release()
 
         return attr.Value.Value
 
@@ -141,23 +147,23 @@ class OPCUAConnector:
                                  node_id: str,
                                  subscription_handler: OPCUASubscriptionHandler,
                                  update_interval: int = 500) -> None:
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to OPC-UA.")
-            self._lock.release()
+            self._release()
             return None
 
         subscription: Subscription = await self._client.create_subscription(update_interval, subscription_handler)
         self._subscriptions[node_id] = subscription
         node = self._client.get_node(node_id)
         await subscription.subscribe_data_change(node)
-        self._lock.release()
+        self._release()
 
     async def stop_subscription(self, node_id: str):
-        self._lock.acquire()
+        self._acquire()
         if not self._connected:
             logger.error("Not connected to OPC-UA.")
-            self._lock.release()
+            self._release()
             return None
 
         subscription = self._subscriptions.get(node_id)
@@ -165,7 +171,7 @@ class OPCUAConnector:
             await subscription.delete()
             self._subscriptions.pop(node_id)
 
-        self._lock.release()
+        self._release()
 
 
 class OPCUASubscriptionHandler(ABC):

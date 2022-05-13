@@ -1,13 +1,11 @@
-import logging
 import requests
 from json import loads as json_loads
-
+from smartforge.utils import get_logger
 
 """
 Logger
 """
-logger = logging.getLogger("SimulatorConnector")
-logger.setLevel(level=logging.INFO)
+logger = get_logger("OPCUAConnector")
 
 
 class SimulatorConnector:
@@ -16,7 +14,7 @@ class SimulatorConnector:
         self._host = host
 
     def default_parameters(self) -> dict:
-        response = requests.post(f"{self.host}/default_parameters")
+        response = requests.post(f"{self._host}/default_parameters")
         if response.ok:
             return json_loads(response.text)
         else:
