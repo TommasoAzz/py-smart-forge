@@ -1,3 +1,7 @@
+**Version 0.7.2**
+
+- Bug fixes
+
 **Version 0.7.1**
 
 - Bug fixes
