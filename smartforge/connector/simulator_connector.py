@@ -1,6 +1,6 @@
 import requests
 from json import loads as json_loads
-from smartforge.utils import get_logger
+from ..utils import get_logger
 
 """
 Logger

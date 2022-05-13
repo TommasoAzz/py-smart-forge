@@ -1,3 +1,7 @@
+**Version 0.7.1**
+
+- Bug fixes
+
 **Version 0.7.0**
 
 - Fixes and new flag for controlling whether to enable/disable lock protection (default: disabled).

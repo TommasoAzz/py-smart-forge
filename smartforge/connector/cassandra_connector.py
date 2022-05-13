@@ -4,7 +4,7 @@ from cassandra.cluster import Session
 from cassandra import ProtocolVersion
 from cassandra.auth import PlainTextAuthProvider
 
-from smartforge.utils import get_logger
+from ..utils import get_logger
 
 """
 Logger

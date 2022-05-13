@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 
 from asyncua import Client, Node, ua
 from asyncua.common.subscription import Subscription
-from smartforge.utils import get_logger
+from ..utils import get_logger
 
 """
 Logger

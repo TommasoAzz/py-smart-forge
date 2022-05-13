@@ -1,7 +1,7 @@
 import threading
 from enum import Enum, unique
 from typing import List, Union, Dict
-from smartforge.utils import get_logger
+from ..utils import get_logger
 
 from redis import Redis
 
